@@ -255,6 +255,15 @@ export default function ChatWidget() {
     setChatReady(true);
   };
 
+  const clearSessionAndFold = () => {
+    sessionStorage.removeItem("hazel-session");
+    sessionStorage.removeItem("agent-session-id");
+    sessionStorage.removeItem("shop-cart-items");
+    setSession(null);
+    setChatReady(false);
+    setIsFolded(true);
+  };
+
   // Sync CES titlebar close action with local fold state.
   useEffect(() => {
     const container = containerRef.current;
@@ -271,7 +280,7 @@ export default function ChatWidget() {
       });
 
       if (clickedCloseButton) {
-        setIsFolded(true);
+        clearSessionAndFold();
       }
     };
 
@@ -309,9 +318,9 @@ export default function ChatWidget() {
           onClick={() => setIsFolded(!isFolded)}
           style={{
             position: "absolute",
-            left: isFolded ? "16px" : "0px",
-            top: isFolded ? "16px" : "22px",
-            zIndex: 100000,
+            left: isFolded ? "14px" : "360px",
+            top: isFolded ? "16px" : "18px",
+            zIndex: 100,
             background: isFolded
               ? "rgba(255, 255, 255, 0.15)"
               : "rgba(255, 255, 255, 0.15)",
@@ -373,6 +382,48 @@ export default function ChatWidget() {
             )}
           </svg>
         </button>
+
+        {chatReady && !isFolded && (
+          <button
+            onClick={() => setIsFolded(!isFolded)}
+            style={{
+              position: "absolute",
+              left: isFolded ? "14px" : "270px",
+              top: isFolded ? "16px" : "18px",
+              zIndex: 100000,
+             
+              border: "none",
+              borderRadius: "6px",
+              width: "24px",
+              height: "24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: isFolded ? "#4a3b32" : "#898989",
+              transition: "background 0.2s, transform 0.9s",
+            }}
+            title="Close and clear session"
+            aria-label="Close and clear session"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{
+                transform: isFolded ? "none" : "rotate(0deg)",
+                transition: "transform 0.3s",
+              }}
+            >
+              <polyline className="" points="6,9 12,15 18,9"></polyline>
+            </svg>
+          </button>
+        )}
       </div>
 
       <div
@@ -410,9 +461,7 @@ export default function ChatWidget() {
                 slot="titlebar-actions"
                 title-text="Close"
               ></chat-messenger-close-button>
-              <div>
-                
-              </div>
+              <div></div>
             </chat-messenger-container>
           </chat-messenger>
         )}

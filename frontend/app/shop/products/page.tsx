@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { getProducts } from "../../api";
@@ -170,31 +171,33 @@ export default function ShopProductsPage() {
                 key={product.id}
                 className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
               >
-                <div className="relative mb-4 h-44 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
-                  <Image
-                    src={getProductImage(product)}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover"
-                  />
-                </div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
-                  {product.category}
-                </p>
-                <h2 className="mt-1 text-lg font-bold text-slate-900">{product.name}</h2>
-                <div className="mt-3 flex items-center gap-4 text-sm text-slate-600">
-                  <p className="flex items-center gap-1">
-                    <span className="text-amber-500">★</span>
-                    <span className="font-semibold text-slate-900">{getFakeRating(product)}</span>
+                <Link href={`/shop/products/${encodeURIComponent(product.id)}`} className="block">
+                  <div className="relative mb-4 h-44 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                    <Image
+                      src={getProductImage(product)}
+                      alt={product.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+                    {product.category}
                   </p>
-                  <p>
-                    In stock: <span className="font-semibold">{product.quantity}</span>
+                  <h2 className="mt-1 text-lg font-bold text-slate-900">{product.name}</h2>
+                  <div className="mt-3 flex items-center gap-4 text-sm text-slate-600">
+                    <p className="flex items-center gap-1">
+                      <span className="text-amber-500">★</span>
+                      <span className="font-semibold text-slate-900">{getFakeRating(product)}</span>
+                    </p>
+                    <p>
+                      In stock: <span className="font-semibold">{product.quantity}</span>
+                    </p>
+                  </div>
+                  <p className="mt-1 text-xl font-bold text-slate-900">
+                    KES {Number(product.unitCost).toLocaleString()}
                   </p>
-                </div>
-                <p className="mt-1 text-xl font-bold text-slate-900">
-                  KES {Number(product.unitCost).toLocaleString()}
-                </p>
+                </Link>
 
                 <button
                   type="button"

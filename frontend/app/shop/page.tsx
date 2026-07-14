@@ -1,7 +1,88 @@
 import Image from "next/image";
 import Link from "next/link";
+import { API_URL } from "../api";
+import { ProductType } from "../types/ProductType";
 
-export default function ShopHome() {
+const MAX_LATEST_FINDS = 4;
+
+const slugifyCategory = (value: string) =>
+  value.toLowerCase().replace(/ & /g, "-").replace(/\s+/g, "-");
+
+const normalizeImageUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname === "storage.cloud.google.com") {
+      parsed.hostname = "storage.googleapis.com";
+    }
+
+    if (parsed.hostname === "storage.googleapis.com") {
+      parsed.pathname = decodeURIComponent(parsed.pathname);
+    }
+
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+};
+
+const getProductImage = (product: ProductType) => {
+  const rawUrl =
+    product.imageUrl ||
+    product.image ||
+    `https://placehold.co/600x400/png?text=${encodeURIComponent(product.name || "Product")}`;
+
+  const normalizedUrl = normalizeImageUrl(rawUrl);
+
+  return normalizedUrl.includes("placehold.co/") && !normalizedUrl.includes("/png?")
+    ? normalizedUrl.replace(/\/(\d+x\d+)\?/, "/$1/png?")
+    : normalizedUrl;
+};
+
+const shuffleProducts = (products: ProductType[]) => {
+  const shuffled = [...products];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled;
+};
+
+async function fetchProducts(): Promise<ProductType[]> {
+  try {
+    const response = await fetch(`${API_URL}/products`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+    if (Array.isArray(payload?.data)) {
+      return payload.data;
+    }
+    return Array.isArray(payload) ? payload : [];
+  } catch {
+    return [];
+  }
+}
+
+export default async function ShopHome() {
+  const products = await fetchProducts();
+  const categories = Array.from(
+    new Set(products.map((product) => product.category || "Uncategorized"))
+  );
+  const latestFinds = shuffleProducts(products).slice(0, MAX_LATEST_FINDS);
+  const categoryPreviewImageByName = new Map<string, string>();
+
+  products.forEach((product) => {
+    const category = product.category || "Uncategorized";
+    if (!categoryPreviewImageByName.has(category)) {
+      categoryPreviewImageByName.set(category, getProductImage(product));
+    }
+  });
+
   return (
     <>
       <section className="space-y-16 pb-16">
@@ -53,28 +134,25 @@ export default function ShopHome() {
 
         <div>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-6">
-            {[
-              { name: "Appliances", img: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=400" },
-              { name: "Clothing", img: "https://images.unsplash.com/photo-1549479732-ee0adb0f5d32?q=80&w=3213&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&q=80&w=400" },
-              { name: "Electronics", img: "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&q=80&w=400" },
-              { name: "Home & Garden", img: "https://images.unsplash.com/photo-1776397279375-14ff5d61dd56?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&q=80&w=400" },
-              { name: "Health & Beauty", img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=400" },
-            ].map((category) => (
+            {categories.map((category) => (
               <Link
-                key={category.name}
+                key={category}
                 href={`/shop/products?category=${encodeURIComponent(
-                  category.name.toLowerCase().replace(/ & /g, "-").replace(/\s+/g, "-")
+                  slugifyCategory(category)
                 )}`}
                 className="group relative aspect-square overflow-hidden rounded-3xl bg-slate-100 shadow-sm transition hover:shadow-md"
               >
                 <img
-                  src={category.img}
-                  alt={category.name}
+                  src={
+                    categoryPreviewImageByName.get(category) ||
+                    `https://placehold.co/600x600/png?text=${encodeURIComponent(category)}`
+                  }
+                  alt={category}
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
                 <h3 className="absolute bottom-4 left-4 text-base font-serif tracking-wide text-white md:bottom-5 md:left-5 md:text-lg">
-                  {category.name}
+                  {category}
                 </h3>
               </Link>
             ))}
@@ -93,66 +171,37 @@ export default function ShopHome() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Product 1 */}
-            <div className="group cursor-pointer">
-              <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-stone-100">
-                <div className="absolute left-3 top-3 z-10 rounded-full bg-[#e8efe6] px-3 py-1 text-xs font-semibold text-[#5a7054]">
-                  New
-                </div>
-                <img
-                  src="https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&q=80&w=600"
-                  alt="Artisanal Ceramic Bowl"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="text-sm font-semibold text-slate-900">Artisanal Ceramic Bowl</h3>
-              <p className="mt-1 text-sm text-slate-500">Speckled Clay</p>
-              <p className="mt-2 text-sm font-medium text-slate-900">$48.00</p>
+          {latestFinds.length > 0 ? (
+            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+              {latestFinds.map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/shop/products/${encodeURIComponent(product.id)}`}
+                  className="group block cursor-pointer"
+                >
+                  <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-stone-100">
+                    <div className="absolute left-3 top-3 z-10 rounded-full bg-[#e8efe6] px-3 py-1 text-xs font-semibold text-[#5a7054]">
+                      New
+                    </div>
+                    <img
+                      src={getProductImage(product)}
+                      alt={product.name}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <h3 className="text-sm font-semibold text-slate-900">{product.name}</h3>
+                  <p className="mt-1 text-sm text-slate-500">{product.category || "Uncategorized"}</p>
+                  <p className="mt-2 text-sm font-medium text-slate-900">
+                    KES {Number(product.unitCost).toLocaleString()}
+                  </p>
+                </Link>
+              ))}
             </div>
-
-            {/* Product 2 */}
-            <div className="group cursor-pointer">
-              <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-stone-100">
-                <img
-                  src="https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&q=80&w=600"
-                  alt="Premium Wireless Headphones"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="text-sm font-semibold text-slate-900">Premium Wireless Headphones</h3>
-              <p className="mt-1 text-sm text-slate-500">Matte Black</p>
-              <p className="mt-2 text-sm font-medium text-slate-900">$299.00</p>
-            </div>
-
-            {/* Product 3 */}
-            <div className="group cursor-pointer">
-              <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-stone-100">
-                <img
-                  src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=600"
-                  alt="Hydrating Botanical Serum"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="text-sm font-semibold text-slate-900">Hydrating Botanical Serum</h3>
-              <p className="mt-1 text-sm text-slate-500">Daily Wellness</p>
-              <p className="mt-2 text-sm font-medium text-slate-900">$65.00</p>
-            </div>
-
-            {/* Product 4 */}
-            <div className="group cursor-pointer">
-              <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-stone-100">
-                <img
-                  src="https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?auto=format&fit=crop&q=80&w=600"
-                  alt="Hand-carved Wooden Spoons"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="text-sm font-semibold text-slate-900">Hand-carved Wooden Spoons</h3>
-              <p className="mt-1 text-sm text-slate-500">Walnut Wood</p>
-              <p className="mt-2 text-sm font-medium text-slate-900">$24.00</p>
-            </div>
-          </div>
+          ) : (
+            <p className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-600">
+              No products available yet.
+            </p>
+          )}
         </div>
       </section>
 

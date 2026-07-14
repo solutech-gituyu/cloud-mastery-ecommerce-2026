@@ -48,6 +48,7 @@ const CUSTOMER_STORAGE_KEY = "shop-selected-customer-id";
 const LOCAL_CART_STORAGE_KEY = "shop-cart-items-local";
 const LOCAL_SESSION_STORAGE_KEY = "hazel-session-local";
 const LOCAL_CUSTOMER_STORAGE_KEY = "shop-selected-customer-id-local";
+const LEGACY_LOCAL_CUSTOMER_STORAGE_KEY = CUSTOMER_STORAGE_KEY;
 
 /** Read session from sessionStorage (cleared on tab/refresh). */
 function readSession(): Session {
@@ -67,6 +68,7 @@ function readSession(): Session {
       localStorage.removeItem(LOCAL_SESSION_STORAGE_KEY);
       localStorage.removeItem(LOCAL_CART_STORAGE_KEY);
       localStorage.removeItem(LOCAL_CUSTOMER_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_LOCAL_CUSTOMER_STORAGE_KEY);
       return null;
     }
     return parsed;
@@ -109,6 +111,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       const storedCustomerId =
         sessionStorage.getItem(CUSTOMER_STORAGE_KEY) ||
         localStorage.getItem(LOCAL_CUSTOMER_STORAGE_KEY) ||
+        localStorage.getItem(LEGACY_LOCAL_CUSTOMER_STORAGE_KEY) ||
         "";
       if (storedCustomerId) {
         setSelectedCustomerId(storedCustomerId);
@@ -221,6 +224,7 @@ useEffect(() => {
     } else {
       sessionStorage.removeItem(CUSTOMER_STORAGE_KEY);
       localStorage.removeItem(LOCAL_CUSTOMER_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_LOCAL_CUSTOMER_STORAGE_KEY);
     }
   }, [selectedCustomerId]);
 
@@ -324,6 +328,21 @@ useEffect(() => {
     localStorage.removeItem(LOCAL_CART_STORAGE_KEY);
     localStorage.removeItem(LOCAL_SESSION_STORAGE_KEY);
     localStorage.removeItem(LOCAL_CUSTOMER_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_LOCAL_CUSTOMER_STORAGE_KEY);
+
+    // Also purge messenger/local keys so reset matches a first-time visit.
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith("chat-messenger-") || key.startsWith("__next_")) {
+        sessionStorage.removeItem(key);
+      }
+    });
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("chat-messenger-") || key.startsWith("__next_")) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    window.location.assign("/shop");
   }, []);
 
   const cartCount = useMemo(

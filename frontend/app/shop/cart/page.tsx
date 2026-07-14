@@ -79,8 +79,6 @@ export default function ShopCartPage() {
 
         if (resolvedCustomerId) {
           setSelectedCustomerId(resolvedCustomerId);
-        } else if (nextCustomers.length > 0) {
-          setSelectedCustomerId(nextCustomers[0].id);
         }
       } catch {
         toast.error("Unable to load customers for checkout.");

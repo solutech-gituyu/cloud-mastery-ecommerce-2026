@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # -----------------------------
-# Config (override via env vars) check
+# Config (override via env vars) 
 # -----------------------------
 SA_NAME="${SA_NAME:-github-deploy-sa}"
 # WIF/AUTH project (where workload identity pool/provider and service account live)
